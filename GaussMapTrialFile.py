@@ -2,21 +2,83 @@ import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
 
-st.title("Gauss Map and Signed Curvature (Orientation-Correct)")
-
-# ================= USER CONTROLS =================
-curve_type = st.selectbox(
-    "Choose a curve",
-    ["Straight Line", "Exponential Curve (e^x)", "Circle (closed)", 
-     "Cubic Curve (x³)", "Sinusoidal Curve (sin(x))", 
-     "Figure-8 (Lemniscate)", "Limaçon (Heart-like)", "Rhodonea (Rose Curve)",
-     "Epitrochoid (Spirograph)", "Cassini Oval", "Deltoid (3-cusped)"]
+# ================= PAGE CONFIG =================
+st.set_page_config(
+    page_title="Gauss Map & Curvature Analysis",
+    page_icon="📐",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-x_min, x_max = st.slider("Select x-range", -10.0, 10.0, (-2.0, 2.0), step=0.5)
-N = 800  # Increased for smoother curves
+# ================= SIDEBAR CONTROLS =================
+with st.sidebar:
+    st.header("⚙️ Configuration")
+    
+    curve_type = st.selectbox(
+        "Select Curve Type",
+        ["Straight Line", "Exponential Curve (e^x)", "Circle (closed)", 
+         "Cubic Curve (x³)", "Sinusoidal Curve (sin(x))", 
+         "Figure-8 (Lemniscate)", "Limaçon (Heart-like)", "Rhodonea (Rose Curve)",
+         "Epitrochoid (Spirograph)", "Cassini Oval", "Deltoid (3-cusped)"],
+        help="Choose a curve to analyze its curvature properties"
+    )
+    
+    st.divider()
+    
+    # Parameter controls based on curve type
+    if curve_type not in ["Circle (closed)", "Figure-8 (Lemniscate)", "Limaçon (Heart-like)", 
+                          "Rhodonea (Rose Curve)", "Epitrochoid (Spirograph)", 
+                          "Cassini Oval", "Deltoid (3-cusped)"]:
+        st.subheader("Domain")
+        x_min = st.number_input("x_min", value=-2.0, step=0.5)
+        x_max = st.number_input("x_max", value=2.0, step=0.5)
+    
+    # Curve-specific parameters
+    if curve_type == "Circle (closed)":
+        st.subheader("Circle Parameters")
+        r = st.slider("Radius r", 0.5, 5.0, 1.0, step=0.1)
+        orientation = st.radio("Orientation", ["Anti-clockwise", "Clockwise"])
+    
+    elif curve_type == "Figure-8 (Lemniscate)":
+        st.subheader("Lemniscate Parameters")
+        scale = st.slider("Scale", 0.5, 3.0, 1.0, step=0.1)
+    
+    elif curve_type == "Limaçon (Heart-like)":
+        st.subheader("Limaçon Parameters")
+        a = st.slider("Parameter a", 0.5, 3.0, 1.5, step=0.1)
+        b = st.slider("Parameter b", 0.5, 3.0, 1.0, step=0.1)
+        st.caption("Tip: Try a=1.5, b=1.0 for dimpled limaçon")
+    
+    elif curve_type == "Rhodonea (Rose Curve)":
+        st.subheader("Rose Parameters")
+        a = st.slider("Amplitude a", 0.5, 3.0, 1.5, step=0.1)
+        k = st.slider("Petals k", 2.0, 7.0, 3.0, step=0.5)
+        st.caption("k determines number of petals")
+    
+    elif curve_type == "Epitrochoid (Spirograph)":
+        st.subheader("Epitrochoid Parameters")
+        R = st.slider("Large radius R", 2.0, 5.0, 3.0, step=0.5)
+        r = st.slider("Small radius r", 0.5, 3.0, 1.0, step=0.1)
+        d = st.slider("Distance d", 0.5, 3.0, 1.5, step=0.1)
+    
+    elif curve_type == "Cassini Oval":
+        st.subheader("Cassini Oval Parameters")
+        a = st.slider("Focus distance a", 0.5, 2.0, 1.0, step=0.1)
+        b = st.slider("Parameter b", 0.5, 3.0, 1.5, step=0.1)
+        st.caption("b > a√2: single loop")
+    
+    elif curve_type == "Deltoid (3-cusped)":
+        st.subheader("Deltoid Parameters")
+        a = st.slider("Radius a", 0.5, 3.0, 1.5, step=0.1)
 
-# ================= CURVES =================
+# ================= MAIN TITLE =================
+st.title("📐 Gauss Map & Signed Curvature Analysis")
+st.markdown("**Differential Geometry Visualization Tool**")
+st.markdown("---")
+
+N = 800  # High resolution for smooth curves
+
+# ================= CURVE GENERATION =================
 if curve_type == "Straight Line":
     x = np.linspace(x_min, x_max, N)
     y = x
@@ -34,94 +96,58 @@ elif curve_type == "Sinusoidal Curve (sin(x))":
     y = np.sin(x)
 
 elif curve_type == "Figure-8 (Lemniscate)":
-    # Gerono lemniscate
     t = np.linspace(0, 2*np.pi, N)
-    scale = st.slider("Select scale", 0.5, 3.0, 1.0, step=0.1)
     x = scale * np.cos(t)
     y = scale * np.sin(2*t) / 2
 
 elif curve_type == "Limaçon (Heart-like)":
-    # Limaçon: shows clear curvature changes
-    # r = a + b*cos(θ), with a/b ratio determining shape
     t = np.linspace(0, 2*np.pi, N)
-    a = st.slider("Parameter a", 0.5, 3.0, 1.5, step=0.1)
-    b = st.slider("Parameter b", 0.5, 3.0, 1.0, step=0.1)
-    
     r = a + b * np.cos(t)
     x = r * np.cos(t)
     y = r * np.sin(t)
 
 elif curve_type == "Rhodonea (Rose Curve)":
-    # Rose curve: r = a*cos(k*θ)
-    # k determines number of petals (if k is odd, k petals; if even, 2k petals)
     t = np.linspace(0, 2*np.pi, N)
-    a = st.slider("Amplitude a", 0.5, 3.0, 1.5, step=0.1)
-    k = st.slider("Petals parameter k", 2.0, 7.0, 3.0, step=0.5)
-    
     r = a * np.cos(k * t)
     x = r * np.cos(t)
     y = r * np.sin(t)
 
 elif curve_type == "Epitrochoid (Spirograph)":
-    # Epitrochoid: like spirograph patterns
-    # Shows complex curvature changes
-    t = np.linspace(0, 2*np.pi, N)
-    R = st.slider("Large circle radius R", 2.0, 5.0, 3.0, step=0.5)
-    r = st.slider("Small circle radius r", 0.5, 3.0, 1.0, step=0.1)
-    d = st.slider("Distance from center d", 0.5, 3.0, 1.5, step=0.1)
-    
-    # Extend t range for complete pattern
     revolutions = int(np.ceil(r / np.gcd(int(R*10), int(r*10)) * 10))
     t = np.linspace(0, 2*np.pi*revolutions, N*revolutions)
-    
     x = (R + r) * np.cos(t) - d * np.cos((R + r) / r * t)
     y = (R + r) * np.sin(t) - d * np.sin((R + r) / r * t)
 
 elif curve_type == "Cassini Oval":
-    # Cassini oval: generalization of lemniscate
-    # ((x-a)² + y²) * ((x+a)² + y²) = b⁴
     t = np.linspace(0, 2*np.pi, N)
-    a = st.slider("Focus distance a", 0.5, 2.0, 1.0, step=0.1)
-    b = st.slider("Parameter b", 0.5, 3.0, 1.5, step=0.1)
-    
-    # Parametric form
     r_squared = b**2 * np.cos(2*t) + np.sqrt(b**4 - a**4 * np.sin(2*t)**2)
-    r = np.sqrt(np.maximum(r_squared, 0))  # Ensure non-negative
-    
+    r = np.sqrt(np.maximum(r_squared, 0))
     x = r * np.cos(t)
     y = r * np.sin(t)
 
 elif curve_type == "Deltoid (3-cusped)":
-    # Deltoid (hypocycloid with k=3)
-    # Shows three cusps with clear curvature changes
     t = np.linspace(0, 2*np.pi, N)
-    a = st.slider("Radius a", 0.5, 3.0, 1.5, step=0.1)
-    
     x = 2 * a * np.cos(t) + a * np.cos(2*t)
     y = 2 * a * np.sin(t) - a * np.sin(2*t)
 
 elif curve_type == "Circle (closed)":
-    r = st.slider("Select radius r", 0.5, 5.0, 1.0, step=0.1)
-    orientation = st.selectbox("Orientation", ["Anti-clockwise", "Clockwise"])
-
     t = np.linspace(0, 2*np.pi, N)
     if orientation == "Anti-clockwise":
         x = r * np.cos(t)
         y = r * np.sin(t)
-    else:  # Clockwise
+    else:
         x = r * np.cos(t)
         y = -r * np.sin(t)
 
-# ================= DERIVATIVES =================
+# ================= CURVATURE COMPUTATION =================
 if curve_type in ["Straight Line", "Exponential Curve (e^x)", "Cubic Curve (x³)", "Sinusoidal Curve (sin(x))"]:
     dx = x[1] - x[0]
     dy = np.gradient(y, dx, edge_order=2)
     d2y = np.gradient(dy, dx, edge_order=2)
-
-    # curvature for y=f(x)
+    
     kappa = d2y / (1 + dy**2)**(3/2)
     ds = np.sqrt(1 + dy**2) * dx
-
+    
     Tx = 1 / np.sqrt(1 + dy**2)
     Ty = dy / np.sqrt(1 + dy**2)
 
@@ -131,104 +157,208 @@ else:  # Parametric curves
     dy_dt = np.gradient(y, dt, edge_order=2)
     d2x_dt2 = np.gradient(dx_dt, dt, edge_order=2)
     d2y_dt2 = np.gradient(dy_dt, dt, edge_order=2)
-
-    # SIGNED curvature (orientation matters)
-    # κ = (x'y'' - y'x'') / (x'² + y'²)^(3/2)
+    
     speed_squared = dx_dt**2 + dy_dt**2
     speed_cubed = speed_squared**(3/2)
-    
-    # Avoid division by zero
     speed_cubed = np.where(speed_cubed < 1e-10, 1e-10, speed_cubed)
     
     kappa = (dx_dt * d2y_dt2 - dy_dt * d2x_dt2) / speed_cubed
     ds = np.sqrt(speed_squared) * dt
-
-    # Unit tangent vector
+    
     speed = np.sqrt(speed_squared)
     speed = np.where(speed < 1e-10, 1e-10, speed)
     
     Tx = dx_dt / speed
     Ty = dy_dt / speed
 
-# ================= GAUSS INDEX =================
+# ================= GAUSS INDEX CALCULATION =================
 turning_angle = np.sum(kappa * ds)
 index = turning_angle / (2*np.pi)
 
+num_positive = np.sum(kappa >= 0)
+num_negative = np.sum(kappa < 0)
+total_points = num_positive + num_negative
+sign_changes = len(np.where(np.diff(np.sign(kappa)))[0])
+
 # ================= VISUALIZATION =================
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+st.subheader("📊 Curve and Gauss Map Visualization")
+
+# Create figure with larger size for mobile
+fig = plt.figure(figsize=(16, 8))
+gs = fig.add_gridspec(1, 2, hspace=0.3, wspace=0.25)
 
 # Original curve
-ax1.plot(x, y, color='black', linewidth=2)
-ax1.set_title("Original Curve", fontsize=14, fontweight='bold')
-ax1.set_xlabel("x", fontsize=12)
-ax1.set_ylabel("y", fontsize=12)
+ax1 = fig.add_subplot(gs[0, 0])
+ax1.plot(x, y, color='#2E86AB', linewidth=2.5)
+ax1.set_title("Original Curve γ(t)", fontsize=16, fontweight='bold', pad=15)
+ax1.set_xlabel("x", fontsize=13, fontweight='bold')
+ax1.set_ylabel("y", fontsize=13, fontweight='bold')
 ax1.set_aspect('equal', adjustable='box')
-ax1.grid(True, alpha=0.3)
-ax1.margins(0.1)
+ax1.grid(True, alpha=0.25, linestyle='--')
+ax1.tick_params(labelsize=11)
+ax1.margins(0.15)
 
 # Gauss map
+ax2 = fig.add_subplot(gs[0, 1])
 theta = np.linspace(0, 2*np.pi, 400)
-ax2.plot(np.cos(theta), np.sin(theta), color='black', linewidth=1.5)
+ax2.plot(np.cos(theta), np.sin(theta), color='#2D3142', linewidth=2, linestyle='-', alpha=0.8)
 
-colors = np.where(kappa >= 0, 'blue', 'red')
-ax2.scatter(Tx, Ty, c=colors, s=15, alpha=0.6)
+colors = np.where(kappa >= 0, '#0077B6', '#DC2F02')
+ax2.scatter(Tx, Ty, c=colors, s=25, alpha=0.7, edgecolors='none')
+
 ax2.set_aspect('equal')
-ax2.set_title("Gauss Map (Signed)", fontsize=14, fontweight='bold')
-ax2.set_xlabel("Tx", fontsize=12)
-ax2.set_ylabel("Ty", fontsize=12)
-ax2.grid(True, alpha=0.3)
-ax2.set_xlim(-1.2, 1.2)
-ax2.set_ylim(-1.2, 1.2)
+ax2.set_title("Gauss Map: T(t) → S¹", fontsize=16, fontweight='bold', pad=15)
+ax2.set_xlabel("Tₓ", fontsize=13, fontweight='bold')
+ax2.set_ylabel("Tᵧ", fontsize=13, fontweight='bold')
+ax2.grid(True, alpha=0.25, linestyle='--')
+ax2.set_xlim(-1.25, 1.25)
+ax2.set_ylim(-1.25, 1.25)
+ax2.tick_params(labelsize=11)
+
+# Add legend
+from matplotlib.patches import Patch
+legend_elements = [
+    Patch(facecolor='#0077B6', label='κ > 0 (Convex)'),
+    Patch(facecolor='#DC2F02', label='κ < 0 (Concave)')
+]
+ax2.legend(handles=legend_elements, loc='upper right', fontsize=10, framealpha=0.9)
 
 plt.tight_layout()
-st.pyplot(fig)
+st.pyplot(fig, use_container_width=True)
 
-# ================= OUTPUT =================
-st.markdown("### Geometric Results")
+# ================= MATHEMATICAL RESULTS =================
+st.markdown("---")
+st.subheader("🔢 Mathematical Results")
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
+
 with col1:
-    st.metric("Total Turning Angle (radians)", f"{turning_angle:.4f}")
-    st.metric("Gauss Index", f"{index:.4f}")
+    st.metric(
+        label="Total Turning Angle",
+        value=f"{turning_angle:.4f} rad",
+        help="∫ κ(s) ds over the curve"
+    )
+    st.latex(r"\int_\gamma \kappa \, ds")
 
 with col2:
-    num_positive = np.sum(kappa >= 0)
-    num_negative = np.sum(kappa < 0)
-    st.metric("Blue dots (positive κ)", num_positive)
-    st.metric("Red dots (negative κ)", num_negative)
+    st.metric(
+        label="Gauss-Bonnet Index",
+        value=f"{index:.4f}",
+        help="Turning angle divided by 2π"
+    )
+    st.latex(r"\text{index} = \frac{1}{2\pi}\int_\gamma \kappa \, ds")
 
-st.caption("🔵 Blue: positive curvature (convex, anticlockwise) | 🔴 Red: negative curvature (concave, clockwise)")
-
-# Show curvature sign changes
-if num_positive > 0 and num_negative > 0:
-    st.success("✅ This curve shows BOTH red and blue dots - curvature changes sign!")
-    percentage_positive = (num_positive / (num_positive + num_negative)) * 100
-    st.write(f"Curvature distribution: {percentage_positive:.1f}% positive, {100-percentage_positive:.1f}% negative")
-elif num_positive > 0:
-    st.info("ℹ️ This curve only has positive curvature (blue dots only)")
-elif num_negative > 0:
-    st.warning("⚠️ This curve only has negative curvature (red dots only)")
-
-# Curvature statistics
-st.markdown("### Curvature Statistics")
-col3, col4, col5 = st.columns(3)
 with col3:
-    st.write(f"**Max curvature:** {np.max(np.abs(kappa)):.4f}")
-with col4:
-    st.write(f"**Mean |κ|:** {np.mean(np.abs(kappa)):.4f}")
-with col5:
-    sign_changes = len(np.where(np.diff(np.sign(kappa)))[0])
-    st.write(f"**Sign changes:** {sign_changes}")
+    st.metric(
+        label="Curvature Sign Changes",
+        value=f"{sign_changes}",
+        help="Number of inflection points"
+    )
 
-# Information about the curve
-st.markdown("### Curve Information")
-if curve_type == "Limaçon (Heart-like)":
-    st.info("💡 **Limaçon**: When a=b, you get a cardioid (heart shape). Try a=1.5, b=1.0 for dimpled limaçon with curvature changes.")
-elif curve_type == "Rhodonea (Rose Curve)":
-    st.info("💡 **Rose Curve**: The parameter k controls the number of petals. Non-integer k creates interesting patterns with curvature changes.")
-elif curve_type == "Epitrochoid (Spirograph)":
-    st.info("💡 **Epitrochoid**: Like a spirograph! Adjust R, r, and d to see complex patterns. Shows rich curvature variation.")
-elif curve_type == "Cassini Oval":
-    st.info("💡 **Cassini Oval**: When b > a√2, it's a single loop. When b < a, it splits into two loops. Try b=1.2, a=1.0.")
-elif curve_type == "Deltoid (3-cusped)":
-    st.info("💡 **Deltoid**: A hypocycloid with 3 cusps. Shows dramatic curvature changes near the cusps.")
+# ================= CURVATURE STATISTICS =================
+st.markdown("---")
+st.subheader("📈 Curvature Distribution")
+
+col4, col5, col6, col7 = st.columns(4)
+
+with col4:
+    st.metric("Points with κ > 0", f"{num_positive}", delta=f"{(num_positive/total_points*100):.1f}%")
+
+with col5:
+    st.metric("Points with κ < 0", f"{num_negative}", delta=f"{(num_negative/total_points*100):.1f}%")
+
+with col6:
+    st.metric("max |κ|", f"{np.max(np.abs(kappa)):.4f}")
+
+with col7:
+    st.metric("mean |κ|", f"{np.mean(np.abs(kappa)):.4f}")
+
+# ================= CURVATURE ANALYSIS =================
+st.markdown("---")
+st.subheader("🎯 Curvature Analysis")
+
+if num_positive > 0 and num_negative > 0:
+    st.success("✅ **Mixed Curvature Detected**: This curve exhibits both positive and negative curvature regions")
+    
+    percentage_positive = (num_positive / total_points) * 100
+    
+    # Visual progress bar for curvature distribution
+    st.markdown("**Curvature Distribution:**")
+    progress_col1, progress_col2 = st.columns([percentage_positive, 100-percentage_positive])
+    with progress_col1:
+        st.markdown(f"🔵 Positive: **{percentage_positive:.1f}%**")
+    with progress_col2:
+        st.markdown(f"🔴 Negative: **{100-percentage_positive:.1f}%**")
+    
+    st.progress(percentage_positive/100)
+    
+elif num_positive > 0:
+    st.info("ℹ️ **Uniformly Positive Curvature**: The curve is entirely convex (κ > 0)")
+elif num_negative > 0:
+    st.warning("⚠️ **Uniformly Negative Curvature**: The curve is entirely concave (κ < 0)")
+else:
+    st.error("⚪ **Zero Curvature**: The curve is a straight line (κ = 0)")
+
+# ================= MATHEMATICAL INTERPRETATION =================
+st.markdown("---")
+st.subheader("📚 Mathematical Interpretation")
+
+with st.expander("ℹ️ Understanding the Gauss Map", expanded=False):
+    st.markdown("""
+    **Definition**: The Gauss map T: γ → S¹ maps each point on the curve to its unit tangent vector on the unit circle.
+    
+    **Signed Curvature**: 
+    - κ(t) = (x'y'' - y'x'') / (x'² + y'²)^(3/2)
+    - **Blue points (κ > 0)**: Curve bends counter-clockwise (convex)
+    - **Red points (κ < 0)**: Curve bends clockwise (concave)
+    
+    **Gauss-Bonnet Theorem**: For closed curves:
+    """)
+    st.latex(r"\frac{1}{2\pi}\oint_\gamma \kappa \, ds = \text{winding number}")
+    st.markdown("""
+    - Circle (counter-clockwise): index = +1
+    - Circle (clockwise): index = -1
+    - Figure-8: index = 0
+    """)
+
+with st.expander("🔍 About This Curve", expanded=False):
+    if curve_type == "Limaçon (Heart-like)":
+        st.markdown("""
+        **Limaçon Curve**: r = a + b cos(θ)
+        - When **a = b**: Cardioid (heart shape)
+        - When **a > b**: Dimpled limaçon with curvature changes
+        - When **a < b**: Limaçon with inner loop
+        """)
+    elif curve_type == "Rhodonea (Rose Curve)":
+        st.markdown("""
+        **Rose Curve**: r = a cos(kθ)
+        - **k odd**: k petals
+        - **k even**: 2k petals
+        - **Non-integer k**: Creates interesting patterns
+        """)
+    elif curve_type == "Deltoid (3-cusped)":
+        st.markdown("""
+        **Deltoid (Hypocycloid)**: 
+        - x = 2a cos(t) + a cos(2t)
+        - y = 2a sin(t) - a sin(2t)
+        - Has 3 cusps with dramatic curvature changes
+        """)
+    elif curve_type == "Cubic Curve (x³)":
+        st.markdown("""
+        **Cubic Function**: y = x³
+        - Inflection point at x = 0
+        - Perfect example of curvature sign change
+        - κ = 6x / (1 + 9x⁴)^(3/2)
+        """)
+    elif curve_type == "Cassini Oval":
+        st.markdown("""
+        **Cassini Oval**: Product of distances to two foci is constant
+        - When **b > a√2**: Single smooth loop
+        - When **b = a**: Lemniscate (figure-8)
+        - When **b < a**: Two separate loops
+        """)
+
+# ================= FOOTER =================
+st.markdown("---")
+st.caption("💡 **Tip**: Adjust parameters in the sidebar to explore different curves and their curvature properties")
+st.caption("📱 **Mobile-friendly**: This interface is optimized for mobile viewing with large, clear visualizations")
